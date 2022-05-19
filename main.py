@@ -2,13 +2,25 @@ import MetaTrader5 as mt5
 from pyrogram import Client, filters
 import re
 from time import sleep
+from datetime import datetime
+import json
+now = datetime.now()
+signal_datas = []
+try:
+    with(open('./config/signals.json')) as f:
+        signal_datas = json.load(f)
+except:
+    print('error')
 
-print('HELLO!')
+with open('./config/default.json') as f:
+  config = json.load(f)
+
+# print(mt5)
 
 channels = {
     -1001307641116: {'type': 'channel', 'trading': 'scalping', 'url': '@fattahmastertrader'},  #
-    -1001763160769: {'type': 'channel', 'trading': 'scalping', 'url': '@GenjiTheJapanTrader'},  #
-    -1001573760715: {'type': 'channel', 'trading': 'scalping', 'url': '@moiforexsignals'},  #
+    # -1001763160769: {'type': 'channel', 'trading': 'scalping', 'url': '@GenjiTheJapanTrader'},  #
+    # -1001573760715: {'type': 'channel', 'trading': 'scalping', 'url': '@moiforexsignals'},  #
     -1001629728154: {'type': 'channel', 'trading': 'scalping', 'url': '@bizko'},  #
     # -1001416233252: {'type': 'channel', 'trading': 'str_long', 'url': 'test'},  #
     # -1001416233252: {'type': 'channel', 'trading': 'str_long', 'url': 'test'},  #
@@ -63,54 +75,77 @@ symbols = ['AUDCAD', 'AUDCHF', 'AUDJPY', 'AUDNZD', 'AUDUSD', 'CADCHF', 'CADJPY',
 
 app = Client("mt5_signals", api_id="1047128", api_hash="1402e406ccfaf6d7ca2a08469bc60558")
 
+print('APPLICATION IS STARTING!')
+
 def correct_number(params):
     if (params.isdigit()):
         return params;
     else:
-        return re.search(r'\d+', params).group();
+        # re.search(r'\d+', params).group()
+        return ''.join(params.rsplit('.', 1))
 
 def sltp(chat_id, text, Sl, Tp):
     text = text.lower()
     # print(re)
     try:
         try:
+
+            # try:
             PRICE = re.findall(r'[\d.]+', str(text.lower().split('\n')[0]))
-            PRICE1 = float(correct_number(re.findall(r'[\d.]+', str(text.split('\n')[0]))[0]))
+            try:
+                PRICE1 = float(correct_number(re.findall(r'[\d.]+', str(text.split('\n')[0]))[0]))
+                PRICE1 = PRICE[0]
+            except:
+                Entry = "@"
+                PRICE = re.findall(r'[\d.]+', str([i for i in text.lower().split('\n') if Entry in i]))
+                PRICE1 = PRICE[0]
+                # print('price 1 error')
+            # except:
+            
+            print('PRICE', PRICE, PRICE1)
+
+                
             try:    
                 PRICE2 = float(correct_number(PRICE[1]))
             except:
                 PRICE2 = 0
-            # print(PRICE)
+
             # PRICE1 = float(re.findall(r'[\d.]+', str(text.split('\n')[0]))[0])
             # PRICE2 = float(re.findall(r'[\d.]+', str(text.split('\n')[1]))[0])
+            
+
             SL = float(correct_number(re.findall(r'[\d.]+', str([i for i in text.split('\n') if Sl in i]))[-1]))
-            TP1 = float(correct_number(re.findall(r'[\d.]+', str([i for i in text.split('\n') if Tp in i][-1]))[-1]))
+            # TP1 = float(correct_number(re.findall(r'[\d.]+', str([i for i in text.split('\n') if Tp in i][-1]))[-1]))
 
 
             splited_texts = re.findall(r'[\d.]+', str([i for i in text.lower().split('\n') if Tp in i]))
-            sls = re.findall(r'[\d.]+', str([i for i in text.lower().split('\n') if Sl in i]))
+            sls = re.findall(r'[\d.]+', str([i for i in text.lower().split('\n') if "sl" in i]))
+            splited_texts = list(filter(lambda splited_text: splited_text not in ['1','2','3','4','5'], splited_texts))
+            # print(splited_texts, 'PRICE1, PRICE2', sls)
 
+            OPEN_TP = re.findall('open', str([i for i in text.lower().split('\n') if "tp" in i]))
 
             TP3 = "0"
 
             try:
                 TP1 = splited_texts[1]
                 TP2 = splited_texts[3]
-                TP3 = splited_texts[5]
+                TP3 = float(splited_texts[5])
             except:
                 TP1 = splited_texts[0]
                 TP2 = splited_texts[1]
                 
-            
+            if (len(OPEN_TP) > 0):
+                TP3 = "open"
             
             # print(f"PRICE1: {PRICE1}\nPRICE2: {PRICE2}\nSL: {SL}\nTP1: {TP1}\nTP2: {TP2}\nTP3: {TP3}")
 
             # return False
             data = {}
             data['entries'] = [float(PRICE1), float(PRICE2)]
-            data['tps'] = [float(TP1), float(TP2), float(TP3)]
-            data['sl'] = float(correct_number(sls[0]))
-            # print(data)
+            data['tps'] = [float(TP1), float(TP2), TP3]
+            data['sl'] = float(sls[0])
+            print(data)
             return data
 
         except Exception as e:
@@ -463,7 +498,6 @@ def OrderSend(Symbol, Lot, Type, PRICE, Sl, Tp, Magic):
         "type": Type,
         "price": float(PRICE),
         "sl": float(Sl),
-        "tp": float(Tp),
         # "tp1": Tp+10,
         # "tp2": Tp+12,
         "deviation": 3,
@@ -472,6 +506,10 @@ def OrderSend(Symbol, Lot, Type, PRICE, Sl, Tp, Magic):
         "type_time": mt5.ORDER_TIME_GTC,
         "type_filling": mt5.ORDER_FILLING_RETURN
     }
+
+    if (Tp != "open"):
+        request['tp'] = float(Tp)
+
     result = mt5.order_send(request)
     print('Bought', result, request)
     # app.send_message(-1001573760715, f"OrderSend.last_error: {str(mt5.last_error())}")
@@ -484,45 +522,79 @@ def OrderSend(Symbol, Lot, Type, PRICE, Sl, Tp, Magic):
 def my_handler(client, message):
     # print(mt5.ORDER_TYPE_BUY_LIMIT)
     # print(message)
+    # print(config['channels'])
     if (message.text == "/status"):
         app.send_message(-1001573760715, "Still working alaye!")
-
-    if (message.sender_chat.id not in channels):
+    if (str(message.sender_chat.id) not in config['channels']):
+        print('Unsupported channel!')
         return
+
+    # print(config['channels'])
     Type = 150
     NOW_PRICE = 0
-    Lot = 0.01
+    Lot = 0.1
     chat_id = message.chat.id
+    old_text = message.text
     text = str(message.text).lower()
+
     if message.photo:
         if message.caption:
             text = message.caption
     if chat_id < 0:
         if 0 < len(text):
+            if ('cut' in text):
+                print('Close trade.')
+                
+            if ('sl' in text and 'tp' in text) or ('stop loss' in text and 'take profit' in text):
+                print('rewarding signal')
+                
+                return app.send_message(-1001573760715, old_text)
+            print('invalid signal message.')
+            return
+            text = str(text).lower()
+
             if not ('limit' in text) and not ('sell stop' in text) and not ('buy stop' in text):
                 if ('sl' in text and 'tp' in text) or ('stop loss' in text and 'take profit' in text):
                     print('hello')
+                    
                     for Symbol in symbols:
                         if Symbol.lower() in text:
                             if Symbol.lower() == "gold":
                                 Symbol = "XAUUSD"
                             # print(text.lower())
+                            p_type = 'buy'
                             if 'buy' in text.lower():
                                 Type = mt5.ORDER_TYPE_BUY_LIMIT
+                                p_type = 'buy'
                             if 'sell' in text.lower():
                                 Type = mt5.ORDER_TYPE_SELL_LIMIT
+                                p_type = 'sell'
                             st = sltp(chat_id, text, 'sl', 'tp')
-                            # print(st)
+                            print(st)
                             
                             print(Symbol)
+                            try:
+                                with open('./config/signals.json', 'w') as outfile:
+                                    signal_datas.append({
+                                        "pair": Symbol,
+                                        "channel": "@"+message.sender_chat.username,
+                                        "type": p_type,
+                                        "entry": st['entries'],
+                                        "sl": st['sl'],
+                                        "tps": st['tps'],
+                                        "time": now.strftime("%d/%m/%Y %H:%M:%S")
+                                    })
+                                    json.dump(signal_datas, outfile)
+                            except:
+                                error = 'error'
                             # if mt5.symbol_info_tick(Symbol) is not None:
                             for entry in st['entries']:
                                 if st is not False and Type != 150:
                                     for tp in st['tps']:
                                         print('Entry no: ', entry, 'TP: ', tp, 'TPLEN', len(st['tps']), 'Symbol: ', Symbol)
                                         try:
-                                            if mt5.initialize(login=40091749, server="OctaFX-Real",
-                                                    password="y%u@UdUv"):
+                                            if mt5.initialize(login=config['mt5']['username'], server=config['mt5']['server'],
+                                                              password=config['mt5']['password']):
                                                 
                                                 OrderSend(Symbol.upper(), Lot, Type, entry, st['sl'], tp,
                                                             int(str(chat_id)[-10:]))

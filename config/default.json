@@ -1,0 +1,11 @@
+{
+    "channels": {
+        "-1001307641116": {"type": "channel", "trading": "scalping", "url": "@fattahmastertrader", "status": "connected"},
+        "-1001629728154": {"type": "channel", "trading": "scalping", "url": "@bizko", "status": "not-connected"}
+    },
+    "mt5": {
+        "username": 89398420,
+        "server": "OctaFX-Demo",
+        "password": "hYLEMaSY"
+    }
+}
