@@ -1,7 +1,9 @@
 {
     "channels": {
         "-1001307641116": {"type": "channel", "trading": "scalping", "url": "@fattahmastertrader", "status": "connected"},
-        "-1001629728154": {"type": "channel", "trading": "scalping", "url": "@bizko", "status": "not-connected"}
+        "-1001629728154": {"type": "channel", "trading": "scalping", "url": "@bizko", "status": "not-connected"},
+        "-1001499158008": {"type": "channel", "trading": "scalping", "url": "@wfrVIP", "status": "connected"},
+        "-1001573760715": {"type": "channel", "trading": "scalping", "url": "@moiforexsignals", "status": "connected"}
     },
     "mt5": {
         "username": 89398420,

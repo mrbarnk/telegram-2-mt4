@@ -1,107 +1,83 @@
-import json
-from time import sleep
-import re
-from pyrogram import Client, filters
 import MetaTrader5 as mt5
+from pyrogram import Client, filters
+import re
+from time import sleep
+from datetime import datetime
+import json
+now = datetime.now()
+signal_datas = []
+try:
+    with(open('./config/signals.json')) as f:
+        signal_datas = json.load(f)
+except:
+    print('error')
 
-with open('./config/pairs.json') as f:
-  pairs = json.load(f)
+with open('./config/default.json') as f:
+  config = json.load(f)
 
-channels = {
-    #
-    -1001499158008: {'type': 'channel', 'trading': 'str_long', 'url': 'wfrVIP'},
-    #
-    -1001573760715: {'type': 'channel', 'trading': 'str_long', 'url': 'moiforexsignals'},
-    #
-    -1001416233252: {'type': 'channel', 'trading': 'str_long', 'url': 'test'},
-    #
-    -1001445377985: {'type': 'channel', 'trading': 'str_long', 'url': '@americanforexspecialist'},
-    #
-    -1001349935562: {'type': 'channel', 'trading': 'gold',     'url': '@bestForexSignalsPips'},
-    #
-    -1001246538371: {'type': 'channel', 'trading': 'scalping', 'url': '@bestforextradinggroup'},
-    #
-    -1001291056071: {'type': 'channel', 'trading': 'scalping', 'url': '@fXReaperFreeForexSignals'},
-    #
-    -1001383532475: {'type': 'channel', 'trading': 'scalping', 'url': '@forexMoneyNLFree'},
-    #
-    -1001411820913: {'type': 'channel', 'trading': 'scalping', 'url': '@forexPipsFactory2'},
-    -1001480924116: {'type': 'channel', 'trading': 'scalping', 'url': '@forex_Signals_PIPs_Signal_Fx'},  #
-    #
-    -1001270204996: {'type': 'channel', 'trading': 'scalping', 'url': '@forex_xlab1'},
-    #
-    -1001126668980: {'type': 'group',   'trading': 'scalping', 'url': '@forexgreenpips958'},
-    #
-    -1001414424977: {'type': 'group',   'trading': 'scalping', 'url': '@forexgroup1111'},
-    #
-    -1001414424977: {'type': 'group',   'trading': 'scalping', 'url': '@Forexgroup112'},
-    #
-    -1001414424977: {'type': 'group',   'trading': 'scalping', 'url': '@Forexkiller1123'},
-    #
-    -1001311844342: {'type': 'channel', 'trading': 'scalping', 'url': '@forexsignalfactory'},
-    #
-    -1001491035512: {'type': 'channel', 'trading': 'scalping', 'url': '@forexsignalsolutions'},
-    #
-    -1001316056319: {'type': 'channel', 'trading': 'scalping', 'url': '@forexsignalsstreet'},
-    #
-    -1001470291934: {'type': 'channel', 'trading': 'scalping', 'url': '@forexsignalvalue'},
-    #
-    -1001420572107: {'type': 'channel', 'trading': 'scalping', 'url': '@forexsignalzz'},
-    #
-    -1001062012353: {'type': 'group',   'trading': 'str_long', 'url': '@FxGlobal5'},
-    #
-    -1001341052202: {'type': 'channel', 'trading': 'scalping', 'url': '@fxSignals_Gold'},
-    #
-    -1001298489655: {'type': 'channel', 'trading': 'scalping', 'url': '@fxpipsaction1'},
-    #
-    -1001399543862: {'type': 'channel', 'trading': 'scalping', 'url': '@fxpipsfactory'},
-    #
-    -1001399543862: {'type': 'group',   'trading': 'scalping', 'url': '@fx_globaltrades'},
-    #
-    -1001157841207: {'type': 'channel', 'trading': 'scalping', 'url': '@greenpipsforex'},
-    -1001203106845: {'type': 'channel', 'trading': 'scalping', 'url': 'https://t.me/joinchat/AAAAAEe19B0ZIeRRXNOpAg'},
-    -1001355784993: {'type': 'channel', 'trading': 'scalping', 'url': 'https://t.me/joinchat/AAAAAFDPoyF6DXvyQDYpDw'},
-    #
-    -1001302273796: {'type': 'channel', 'trading': 'scalping', 'url': '@m5MacDScalpers'},
-    #
-    -1001449789431: {'type': 'channel', 'trading': 'scalping', 'url': '@mADIFOREX_SIGNAL_MASTAR'},
-    #
-    -1001299535263: {'type': 'channel', 'trading': 'scalping', 'url': '@metatrader4Signals0'},
-    #
-    -1001494412791: {'type': 'channel', 'trading': 'scalping', 'url': '@metatrader5signal1'},
-    #
-    -1001171155421: {'type': 'channel', 'trading': 'scalping', 'url': '@octaFxsignalx'},
-    #
-    -1001148641286: {'type': 'channel', 'trading': 'scalping', 'url': '@pipstowin'},
-    #
-    -1001392466168: {'type': 'channel', 'trading': 'scalping', 'url': '@proFxSecretStrategy'},
-    #
-    -1001473518645: {'type': 'channel', 'trading': 'scalping', 'url': '@professoroff'},
-    #
-    -1001391473841: {'type': 'channel', 'trading': 'scalping', 'url': '@ronaldpatrick'},
-    #
-    -1001141061818: {'type': 'channel', 'trading': 'scalping', 'url': '@signal4000'},
-    #
-    -1001409206299: {'type': 'channel', 'trading': 'scalping', 'url': '@signalfxoption'},
-    #
-    -1001471162189: {'type': 'group',   'trading': 'scalping', 'url': '@signalsscalping12'},
-    #
-    -1001127289760: {'type': 'channel', 'trading': 'scalping', 'url': '@sureshotforex'},
-    #
-    -1001331117752: {'type': 'channel', 'trading': 'scalping', 'url': '@taarget_plus'},
-    #
-    -1001296877896: {'type': 'channel', 'trading': 'scalping', 'url': '@trendFriend12'},
-    #
-    -1001188607041: {'type': 'channel', 'trading': 'scalping', 'url': '@vipCoinexhangePump'},
-    -1001398995940: {'type': 'channel', 'trading': 'str_long', 'url': '@voltforex'},
-}
+# print(mt5)
 
-# symbols = ['AUDCAD', 'AUDCHF', 'AUDJPY', 'AUDNZD', 'AUDUSD', 'CADCHF', 'CADJPY', 'CHFJPY', 'GBPAUD', 'GBPCAD',
-#            'GBPCHF', 'GBPJPY', 'GBPNZD', 'GBPUSD', 'EURAUD', 'EURCAD', 'EURCHF', 'EURGBP', 'EURJPY', 'EURNZD',
-#            'EURUSD', 'NZDCAD', 'NZDCHF', 'NZDJPY', 'NZDUSD', 'USDCAD', 'USDCHF', 'USDCNH', 'USDJPY', 'XAUUSD']
+# channels = [-1001573760715]
+# {
+#     -1001499158008: {'type': 'channel', 'trading': 'scalping', 'url': '@wfrVIP'},  #
+#     # -1001307641116: {'type': 'channel', 'trading': 'scalping', 'url': '@fattahmastertrader'},  #
+#     # -1001763160769: {'type': 'channel', 'trading': 'scalping', 'url': '@GenjiTheJapanTrader'},  #
+#     -1001573760715: {'type': 'channel', 'trading': 'scalping', 'url': '@moiforexsignals'},  #
+#     # -1001629728154: {'type': 'channel', 'trading': 'scalping', 'url': '@bizko'},  #
+#     # -1001416233252: {'type': 'channel', 'trading': 'str_long', 'url': 'test'},  #
+#     # -1001416233252: {'type': 'channel', 'trading': 'str_long', 'url': 'test'},  #
+#     # -1001445377985: {'type': 'channel', 'trading': 'str_long', 'url': '@americanforexspecialist'},  #
+#     # -1001349935562: {'type': 'channel', 'trading': 'gold',     'url': '@bestForexSignalsPips'},  #
+#     # -1001246538371: {'type': 'channel', 'trading': 'scalping', 'url': '@bestforextradinggroup'},  #
+#     # -1001291056071: {'type': 'channel', 'trading': 'scalping', 'url': '@fXReaperFreeForexSignals'},  #
+#     # -1001383532475: {'type': 'channel', 'trading': 'scalping', 'url': '@forexMoneyNLFree'},  #
+#     # -1001411820913: {'type': 'channel', 'trading': 'scalping', 'url': '@forexPipsFactory2'},  #
+#     # -1001480924116: {'type': 'channel', 'trading': 'scalping', 'url': '@forex_Signals_PIPs_Signal_Fx'},  #
+#     # -1001270204996: {'type': 'channel', 'trading': 'scalping', 'url': '@forex_xlab1'},  #
+#     # -1001126668980: {'type': 'group',   'trading': 'scalping', 'url': '@forexgreenpips958'},  #
+#     # -1001414424977: {'type': 'group',   'trading': 'scalping', 'url': '@forexgroup1111'},  #
+#     # -1001414424977: {'type': 'group',   'trading': 'scalping', 'url': '@Forexgroup112'},  #
+#     # -1001414424977: {'type': 'group',   'trading': 'scalping', 'url': '@Forexkiller1123'},  #
+#     # -1001311844342: {'type': 'channel', 'trading': 'scalping', 'url': '@forexsignalfactory'},  #
+#     # -1001491035512: {'type': 'channel', 'trading': 'scalping', 'url': '@forexsignalsolutions'},  #
+#     # -1001316056319: {'type': 'channel', 'trading': 'scalping', 'url': '@forexsignalsstreet'},  #
+#     # -1001470291934: {'type': 'channel', 'trading': 'scalping', 'url': '@forexsignalvalue'},  #
+#     # -1001420572107: {'type': 'channel', 'trading': 'scalping', 'url': '@forexsignalzz'},  #
+#     # -1001062012353: {'type': 'group',   'trading': 'str_long', 'url': '@FxGlobal5'},  #
+#     # -1001341052202: {'type': 'channel', 'trading': 'scalping', 'url': '@fxSignals_Gold'},  #
+#     # -1001298489655: {'type': 'channel', 'trading': 'scalping', 'url': '@fxpipsaction1'},  #
+#     # -1001399543862: {'type': 'channel', 'trading': 'scalping', 'url': '@fxpipsfactory'},  #
+#     # -1001399543862: {'type': 'group',   'trading': 'scalping', 'url': '@fx_globaltrades'},  #
+#     # -1001157841207: {'type': 'channel', 'trading': 'scalping', 'url': '@greenpipsforex'},  #
+#     # -1001203106845: {'type': 'channel', 'trading': 'scalping', 'url': 'https://t.me/joinchat/AAAAAEe19B0ZIeRRXNOpAg'},
+#     # -1001355784993: {'type': 'channel', 'trading': 'scalping', 'url': 'https://t.me/joinchat/AAAAAFDPoyF6DXvyQDYpDw'},
+#     # -1001302273796: {'type': 'channel', 'trading': 'scalping', 'url': '@m5MacDScalpers'},  #
+#     # -1001449789431: {'type': 'channel', 'trading': 'scalping', 'url': '@mADIFOREX_SIGNAL_MASTAR'},  #
+#     # -1001299535263: {'type': 'channel', 'trading': 'scalping', 'url': '@metatrader4Signals0'},  #
+#     # -1001494412791: {'type': 'channel', 'trading': 'scalping', 'url': '@metatrader5signal1'},  #
+#     # -1001171155421: {'type': 'channel', 'trading': 'scalping', 'url': '@octaFxsignalx'},  #
+#     # -1001148641286: {'type': 'channel', 'trading': 'scalping', 'url': '@pipstowin'},  #
+#     # -1001392466168: {'type': 'channel', 'trading': 'scalping', 'url': '@proFxSecretStrategy'},  #
+#     # -1001473518645: {'type': 'channel', 'trading': 'scalping', 'url': '@professoroff'},  #
+#     # -1001391473841: {'type': 'channel', 'trading': 'scalping', 'url': '@ronaldpatrick'},  #
+#     # -1001141061818: {'type': 'channel', 'trading': 'scalping', 'url': '@signal4000'},  #
+#     # -1001409206299: {'type': 'channel', 'trading': 'scalping', 'url': '@signalfxoption'},  #
+#     # -1001471162189: {'type': 'group',   'trading': 'scalping', 'url': '@signalsscalping12'},  #
+#     # -1001127289760: {'type': 'channel', 'trading': 'scalping', 'url': '@sureshotforex'},  #
+#     # -1001331117752: {'type': 'channel', 'trading': 'scalping', 'url': '@taarget_plus'},  #
+#     # -1001296877896: {'type': 'channel', 'trading': 'scalping', 'url': '@trendFriend12'},  #
+#     # -1001188607041: {'type': 'channel', 'trading': 'scalping', 'url': '@vipCoinexhangePump'},  #
+#     # -1001398995940: {'type': 'channel', 'trading': 'str_long', 'url': '@voltforex'},
+# }
+
+symbols = ['AUDCAD', 'AUDCHF', 'AUDJPY', 'AUDNZD', 'AUDUSD', 'CADCHF', 'CADJPY', 'CHFJPY', 'GBPAUD', 'GBPCAD',
+           'GBPCHF', 'GBPJPY', 'GBPNZD', 'GBPUSD', 'EURAUD', 'EURCAD', 'EURCHF', 'EURGBP', 'EURJPY', 'EURNZD',
+           'EURUSD', 'NZDCAD', 'NZDCHF', 'NZDJPY', 'NZDUSD', 'USDCAD', 'USDCHF', 'USDCNH', 'USDJPY', 'XAUUSD', 'GOLD']
 
 
-bot = Client("mt5_signals", api_id="1047128", api_hash="1402e406ccfaf6d7ca2a08469bc60558")
+app = Client("mt5_signals", api_id="1047128", api_hash="1402e406ccfaf6d7ca2a08469bc60558")
+
+print('APPLICATION IS STARTING!')
 
 def correct_number(params):
     if (params.isdigit()):
@@ -509,83 +485,140 @@ def sltp(chat_id, text, Sl, Tp):
 
 def OrderSend(Symbol, Lot, Type, PRICE, Sl, Tp, Magic):
     selected = mt5.symbol_select(Symbol, True)
+    # print(selected)
     if not selected:
-        bot.send_message(-1001247941772,
-                         f"OrderSend.symbol_select: {str(mt5.last_error())}")
+        app.send_message(-1001573760715, f"OrderSend.symbol_select: {str(mt5.last_error())}")
         mt5.shutdown()
     symbol_info = mt5.symbol_info(Symbol)
+    if (PRICE == 0.00 or Tp == 0.00 or Sl == 0.00):
+        print('Invalid Price')
+        return
     request = {
-        "action": mt5.TRADE_ACTION_DEAL,
+        "action": mt5.TRADE_ACTION_PENDING,
         "symbol": Symbol,
         "volume": Lot,
         "type": Type,
-        "price": PRICE,
-        "sl": Sl,
-        "tp": Tp,
+        "price": float(PRICE),
+        "sl": float(Sl),
+        # "tp1": Tp+10,
+        # "tp2": Tp+12,
         "deviation": 3,
         "magic": Magic,
         "comment": "Order ochish",
         "type_time": mt5.ORDER_TIME_GTC,
-        # "type_filling": mt5.ORDER_FILLING_    return,
+        "type_filling": mt5.ORDER_FILLING_RETURN
     }
+
+    if (Tp != "open"):
+        request['tp'] = float(Tp)
+
     result = mt5.order_send(request)
-    # bot.send_message(-1001247941772, f"OrderSend.last_error: {str(mt5.last_error())}")
+    print('Bought', result, request)
+    # app.send_message(-1001573760715, f"OrderSend.last_error: {str(mt5.last_error())}")
     mt5.shutdown()
-    # quit()
+    #quit()
 
 
-@bot.on_message(filters.channel)
-# @bot.on_message((filters.photo | filters.text) & (filters.channel | filters.chat))
+@app.on_message(filters.channel)
+# @app.on_message((filters.photo | filters.text) & (filters.channel | filters.chat))
 def my_handler(client, message):
-    Type = 2
+    # print(mt5.ORDER_TYPE_BUY_LIMIT)
+    # print(message)
+    # print(config['channels'])
+    # print(message.sender_chat.id, config['channels'][-1001573760715])
+    if (message.text == "/status"):
+        app.send_message(-1001573760715, "Still working alaye!")
+    if (str(message.sender_chat.id) not in config['channels']):
+        print('Unsupported channel!')
+        return
+
+    # print(config['channels'])
+    Type = 150
     NOW_PRICE = 0
-    Lot = 0.01
+    Lot = 0.1
     chat_id = message.chat.id
+    old_text = message.text
     text = str(message.text).lower()
+
     if message.photo:
         if message.caption:
             text = message.caption
     if chat_id < 0:
         if 0 < len(text):
+            if ('cut' in text):
+                print('Close trade.')
+                
+            if ('sl' in text and 'tp' in text) or ('stop loss' in text and 'take profit' in text):
+                print('rewarding signal')
+                
+                # return app.send_message(-1001573760715, old_text)
+            print('invalid signal message.')
+            return
+            text = str(text).lower()
+
             if not ('limit' in text) and not ('sell stop' in text) and not ('buy stop' in text):
                 if ('sl' in text and 'tp' in text) or ('stop loss' in text and 'take profit' in text):
-                    for pair in pairs:
-                        Symbol = pair["symbol"]
+                    print('hello')
+                    
+                    for Symbol in symbols:
                         if Symbol.lower() in text:
-                            print(Symbol)
-                            if 'buy' in text:
-                                Type = 0
-                            if 'sell' in text:
-                                Type = 1
+                            if Symbol.lower() == "gold":
+                                Symbol = "XAUUSD"
+                            # print(text.lower())
+                            p_type = 'buy'
+                            if 'buy' in text.lower():
+                                Type = mt5.ORDER_TYPE_BUY_LIMIT
+                                p_type = 'buy'
+                            if 'sell' in text.lower():
+                                Type = mt5.ORDER_TYPE_SELL_LIMIT
+                                p_type = 'sell'
                             st = sltp(chat_id, text, 'sl', 'tp')
                             print(st)
-                            if st is not False and Type != 2:
-                                for i in range(20):
-                                    if mt5.initialize(login=68025724, server="RoboForex-DemoPro",
-                                                      password="Metatrader5"):
-                                        if abs(st[0] - NOW_PRICE) < 200 * mt5.symbol_info(Symbol).point:
-                                            if Type == 0:
-                                                NOW_PRICE = mt5.symbol_info_tick(
-                                                    Symbol).ask
-                                            if Type == 1:
-                                                NOW_PRICE = mt5.symbol_info_tick(
-                                                    Symbol).bid
-                                            if mt5.symbol_info(Symbol) is not None:
+                            
+                            print(Symbol)
+                            try:
+                                with open('./config/signals.json', 'w') as outfile:
+                                    signal_datas.append({
+                                        "pair": Symbol,
+                                        "channel": "@"+message.sender_chat.username,
+                                        "type": p_type,
+                                        "entry": st['entries'],
+                                        "sl": st['sl'],
+                                        "tps": st['tps'],
+                                        "time": now.strftime("%d/%m/%Y %H:%M:%S")
+                                    })
+                                    json.dump(signal_datas, outfile)
+                            except:
+                                error = 'error'
+                            # if mt5.symbol_info_tick(Symbol) is not None:
+                            for entry in st['entries']:
+                                if st is not False and Type != 150:
+                                    for tp in st['tps']:
+                                        print('Entry no: ', entry, 'TP: ', tp, 'TPLEN', len(st['tps']), 'Symbol: ', Symbol)
+                                        try:
+                                            if mt5.initialize(login=config['mt5']['username'], server=config['mt5']['server'],
+                                                              password=config['mt5']['password']):
+                                                
+                                                OrderSend(Symbol.upper(), Lot, Type, entry, st['sl'], tp,
+                                                            int(str(chat_id)[-10:]))
 
-                                                OrderSend(Symbol.upper(), Lot, Type, NOW_PRICE, st[1], st[2],
-                                                          int(str(chat_id)[-10:]))
-                                                break
-                                            else:
-                                                bot.send_message(-1001247941772,
-                                                                 f"{str(mt5.last_error())}")
-                                                OrderSend(Symbol.upper(), Lot, Type, NOW_PRICE, st[1], st[2],
-                                                          int(str(chat_id)[-10:]))
                                                 mt5.shutdown()
-                                        else:
-                                            mt5.shutdown()
-                                            break
-                                    sleep(5)
+                                                # quit()  
+                                                sleep(5)
+
+                                        except Exception as e:
+                                            print('Error', str(e))
+                                    # else:
+                                        # print('Errror')
+                                        # app.send_message(-1001573760715,
+                                        #                     f"{str(mt5.last_error())}")
+                                        # OrderSend(Symbol.upper(), Lot, Type, entry, st['sl'], tp,
+                                        #             int(str(chat_id)[-10:]))
+                                        # mt5.shutdown()
 
 
 if __name__ == "__main__":
-    bot.run()
+    app.run()
+    # app.start()
+    print('GETTING DIALOGS!')
+    # print(app.get_chat('moiforexsignals'))
